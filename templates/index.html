@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GovTracker</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #f5f5f5; }
+    h1 { color: #1a1a2e; }
+    .card { background: white; border-radius: 8px; padding: 20px; margin: 16px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .agency { font-size: 12px; color: #666; text-transform: uppercase; margin-bottom: 6px; }
+    .title { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+    .summary { color: #333; line-height: 1.6; margin-bottom: 10px; background: #f0f7ff; padding: 10px; border-radius: 4px; }
+    .date { font-size: 12px; color: #999; }
+    a { color: #0066cc; }
+    #loading { text-align: center; padding: 40px; font-size: 18px; color: #666; }
+    #error { color: red; text-align: center; padding: 20px; display: none; }
+  </style>
+</head>
+<body>
+  <h1>🏛️ GovTracker</h1>
+  <p>Latest US Federal Government updates, summarized in plain English by AI.</p>
+  <div id="loading">⏳ Loading updates — Claude is summarizing each document, ~15 seconds...</div>
+  <div id="error"></div>
+  <div id="updates"></div>
+
+  <script>
+    fetch('/api/updates')
+      .then(res => res.json())
+      .then(docs => {
+        document.getElementById('loading').style.display = 'none';
+        if (docs.error) throw new Error(docs.error);
+        const container = document.getElementById('updates');
+        docs.forEach(doc => {
+          container.innerHTML += `
+            <div class="card">
+              <div class="agency">${doc.agencies.join(', ')}</div>
+              <div class="title">${doc.title}</div>
+              <div class="summary">💡 ${doc.summary}</div>
+              <div class="date">${doc.date} — <a href="${doc.url}" target="_blank">Read full document →</a></div>
+            </div>
+          `;
+        });
+      })
+      .catch(err => {
+        document.getElementById('loading').style.display = 'none';
+        const errDiv = document.getElementById('error');
+        errDiv.style.display = 'block';
+        errDiv.innerText = 'Error: ' + err.message;
+      });
+  </script>
+</body>
+</html>
+```
