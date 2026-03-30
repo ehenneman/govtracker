@@ -5,11 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GovTracker</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #f5f5f5; }
+    body { font-family: Arial, sans-serif; max-width: 960px; margin: 40px auto; padding: 0 20px; background: #f5f5f5; }
     h1 { color: #1a1a2e; }
-    .card { background: white; border-radius: 8px; padding: 20px; margin: 16px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .agency { font-size: 12px; color: #666; text-transform: uppercase; margin-bottom: 6px; }
-    .title { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+    .filters { margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap; }
+    .filter-btn { padding: 6px 14px; border: none; border-radius: 20px; cursor: pointer; font-size: 13px; background: #ddd; }
+    .filter-btn.active { background: #1a1a2e; color: white; }
+    .card { background: white; border-radius: 8px; padding: 20px; margin: 16px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 4px solid #ccc; }
+    .card[data-source="Federal Register"] { border-left-color: #1a1a2e; }
+    .card[data-source="FDA"] { border-left-color: #e63946; }
+    .card[data-source="SEC"] { border-left-color: #2a9d8f; }
+    .card[data-source="CDC"] { border-left-color: #e76f51; }
+    .card[data-source="NASA"] { border-left-color: #0077b6; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; margin-bottom: 8px; }
+    .badge-Federal-Register { background: #1a1a2e; }
+    .badge-FDA { background: #e63946; }
+    .badge-SEC { background: #2a9d8f; }
+    .badge-CDC { background: #e76f51; }
+    .badge-NASA { background: #0077b6; }
+    .title { font-size: 17px; font-weight: bold; margin-bottom: 8px; }
     .summary { color: #333; line-height: 1.6; margin-bottom: 10px; background: #f0f7ff; padding: 10px; border-radius: 4px; }
     .date { font-size: 12px; color: #999; }
     a { color: #0066cc; }
@@ -19,22 +32,44 @@
 </head>
 <body>
   <h1>🏛️ GovTracker</h1>
-  <p>Latest US Federal Government updates, summarized in plain English by AI.</p>
-  <div id="loading">⏳ Loading updates — Claude is summarizing each document, ~15 seconds...</div>
+  <p>Latest US Federal Government updates across all major agencies, summarized in plain English.</p>
+
+  <div class="filters">
+    <button class="filter-btn active" onclick="filterCards('all', this)">All Agencies</button>
+    <button class="filter-btn" onclick="filterCards('Federal Register', this)">Federal Register</button>
+    <button class="filter-btn" onclick="filterCards('FDA', this)">FDA</button>
+    <button class="filter-btn" onclick="filterCards('SEC', this)">SEC</button>
+    <button class="filter-btn" onclick="filterCards('CDC', this)">CDC</button>
+    <button class="filter-btn" onclick="filterCards('NASA', this)">NASA</button>
+  </div>
+
+  <div id="loading">⏳ Loading updates from all agencies — Claude is summarizing each document (~30 seconds)...</div>
   <div id="error"></div>
   <div id="updates"></div>
 
   <script>
+    let allDocs = [];
+
+    function filterCards(source, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.card').forEach(card => {
+        card.style.display = (source === 'all' || card.dataset.source === source) ? 'block' : 'none';
+      });
+    }
+
     fetch('/api/updates')
       .then(res => res.json())
       .then(docs => {
         document.getElementById('loading').style.display = 'none';
         if (docs.error) throw new Error(docs.error);
+        allDocs = docs;
         const container = document.getElementById('updates');
         docs.forEach(doc => {
+          const badgeClass = 'badge-' + doc.source.replace(' ', '-');
           container.innerHTML += `
-            <div class="card">
-              <div class="agency">${doc.agencies.join(', ')}</div>
+            <div class="card" data-source="${doc.source}">
+              <span class="badge ${badgeClass}">${doc.source}</span>
               <div class="title">${doc.title}</div>
               <div class="summary">💡 ${doc.summary}</div>
               <div class="date">${doc.date} — <a href="${doc.url}" target="_blank">Read full document →</a></div>
