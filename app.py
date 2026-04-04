@@ -1,6 +1,5 @@
 import os
 import requests
-import anthropic
 import xml.etree.ElementTree as ET
 from flask import Flask, jsonify, render_template
 from dotenv import load_dotenv
@@ -8,7 +7,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 
 def fetch_federal_register():
@@ -106,26 +104,6 @@ def fetch_rss(url, agency_name, source_name):
     return results
 
 
-def summarize(text):
-    """Ask Claude to summarize a government document in plain English."""
-    if not text or len(text.strip()) < 50:
-        return "No detailed summary available - click the link to read the full document."
-
-    message = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=150,
-        messages=[{
-            "role": "user",
-            "content": (
-                "Summarize this US government update in 2 plain-English sentences "
-                "that anyone can understand. Be concise and factual.\n\n"
-                f"Document: {text}"
-            )
-        }]
-    )
-    return message.content[0].text
-
-
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -158,22 +136,17 @@ def updates():
                 print(f"Fetcher failed: {e}")
                 continue
 
-        # Summarize each document
+# Return raw text as description
         results = []
         for doc in all_docs:
-            try:
-                summary = summarize(doc["text"])
-                results.append({
-                    "title": doc["title"],
-                    "agency": doc["agency"],
-                    "date": doc["date"],
-                    "url": doc["url"],
-                    "summary": summary,
-                    "source": doc["source"]
-                })
-            except Exception as e:
-                print(f"Summarize failed: {e}")
-                continue
+            results.append({
+                "title": doc["title"],
+                "agency": doc["agency"],
+                "date": doc["date"],
+                "url": doc["url"],
+                "summary": doc["text"][:300] + "..." if len(doc["text"]) > 300 else doc["text"],
+                "source": doc["source"]
+            })
 
         return jsonify(results)
 
