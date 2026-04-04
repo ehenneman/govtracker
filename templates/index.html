@@ -34,6 +34,14 @@
   <h1>GovTracker</h1>
   <p>Latest US Federal Government updates across all major agencies</p>
 
+<input
+    type="text"
+    id="search"
+    placeholder="🔍 Search updates..."
+    oninput="filterAll()"
+    style="width: 100%; padding: 12px 16px; font-size: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 16px; box-sizing: border-box;"
+  />
+
   <div class="filters">
     <button class="filter-btn active" onclick="filterCards('all', this)">All Agencies</button>
     <button class="filter-btn" onclick="filterCards('Federal Register', this)">Federal Register</button>
@@ -47,15 +55,24 @@
   <div id="error"></div>
   <div id="updates"></div>
 
-  <script>
+<script>
     let allDocs = [];
+    let activeSource = 'all';
+
+    function filterAll() {
+      const query = document.getElementById('search').value.toLowerCase();
+      document.querySelectorAll('.card').forEach(card => {
+        const matchesSource = activeSource === 'all' || card.dataset.source === activeSource;
+        const matchesSearch = card.innerText.toLowerCase().includes(query);
+        card.style.display = (matchesSource && matchesSearch) ? 'block' : 'none';
+      });
+    }
 
     function filterCards(source, btn) {
+      activeSource = source;
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      document.querySelectorAll('.card').forEach(card => {
-        card.style.display = (source === 'all' || card.dataset.source === source) ? 'block' : 'none';
-      });
+      filterAll();
     }
 
     fetch('/api/updates')
@@ -71,7 +88,7 @@
             <div class="card" data-source="${doc.source}">
               <span class="badge ${badgeClass}">${doc.source}</span>
               <div class="title">${doc.title}</div>
-              <div class="summary">💡 ${doc.summary}</div>
+              <div class="summary">${doc.summary}</div>
               <div class="date">${doc.date} — <a href="${doc.url}" target="_blank">Read full document →</a></div>
             </div>
           `;
